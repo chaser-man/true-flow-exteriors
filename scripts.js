@@ -364,3 +364,214 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Mock Reviews System
+document.addEventListener('DOMContentLoaded', function() {
+    // Mock review data
+    const mockReviews = [
+        {
+            name: "Sarah M.",
+            service: "Power Washing",
+            rating: 5,
+            text: "Absolutely fantastic service! They power washed our driveway and it looks brand new. Very professional team and fair pricing.",
+            date: "December 2024"
+        },
+        {
+            name: "Mike R.",
+            service: "Weed Removal",
+            rating: 5,
+            text: "True Flow did an amazing job removing all the weeds from our property. They were thorough and cleaned up everything perfectly.",
+            date: "November 2024"
+        },
+        {
+            name: "Jennifer L.",
+            service: "Pet Waste Cleanup",
+            rating: 4,
+            text: "Great service! They come weekly to clean up after our dogs. Reliable and always on time. Highly recommend!",
+            date: "November 2024"
+        },
+        {
+            name: "David K.",
+            service: "Multiple Services",
+            rating: 5,
+            text: "Used them for power washing and curb painting. Exceeded expectations on both services. Will definitely hire again!",
+            date: "October 2024"
+        },
+        {
+            name: "Lisa P.",
+            service: "Curb Painting",
+            rating: 5,
+            text: "Our curbs look incredible! Professional work and attention to detail. Great value for the quality of service.",
+            date: "October 2024"
+        },
+        {
+            name: "Tom H.",
+            service: "Power Washing",
+            rating: 4,
+            text: "Did a good job cleaning our deck and patio. The team was friendly and worked efficiently. Would use again.",
+            date: "September 2024"
+        }
+    ];
+
+    // Load reviews from localStorage and merge with mock reviews
+    function loadReviews() {
+        const storedReviews = JSON.parse(localStorage.getItem('trueFlowReviews')) || [];
+        return [...storedReviews, ...mockReviews];
+    }
+
+    // Save new review to localStorage
+    function saveReview(review) {
+        const storedReviews = JSON.parse(localStorage.getItem('trueFlowReviews')) || [];
+        storedReviews.unshift(review); // Add to beginning
+        localStorage.setItem('trueFlowReviews', JSON.stringify(storedReviews));
+    }
+
+    // Generate star HTML
+    function generateStars(rating) {
+        let starsHTML = '';
+        for (let i = 1; i <= 5; i++) {
+            starsHTML += `<i class="fas fa-star" ${i <= rating ? 'style="color: #fbbf24;"' : 'style="color: #d1d5db;"'}></i>`;
+        }
+        return starsHTML;
+    }
+
+    // Create review card HTML
+    function createReviewCard(review) {
+        return `
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="reviewer-info">
+                        <div class="reviewer-name">${review.name}</div>
+                        <div class="review-service">${review.service}</div>
+                    </div>
+                    <div class="review-rating">
+                        ${generateStars(review.rating)}
+                    </div>
+                </div>
+                <div class="review-text">"${review.text}"</div>
+                <div class="review-date">${review.date}</div>
+            </div>
+        `;
+    }
+
+    // Display all reviews
+    function displayReviews() {
+        const reviewsGrid = document.getElementById('reviews-grid');
+        const reviews = loadReviews();
+        
+        if (reviews.length === 0) {
+            reviewsGrid.innerHTML = `
+                <div class="no-reviews">
+                    <i class="fas fa-star"></i>
+                    <h3>No Reviews Yet</h3>
+                    <p>Be the first to share your experience!</p>
+                </div>
+            `;
+        } else {
+            reviewsGrid.innerHTML = reviews.map(review => createReviewCard(review)).join('');
+        }
+
+        // Update stats
+        updateReviewStats(reviews);
+    }
+
+    // Update review statistics
+    function updateReviewStats(reviews) {
+        if (reviews.length === 0) return;
+
+        const totalReviews = reviews.length;
+        const averageRating = (reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1);
+        
+        // Update the stats display
+        const ratingNumber = document.querySelector('.rating-number');
+        const totalReviewsSpan = document.querySelector('.total-reviews');
+        
+        if (ratingNumber) ratingNumber.textContent = averageRating;
+        if (totalReviewsSpan) totalReviewsSpan.textContent = `Based on ${totalReviews} reviews`;
+    }
+
+    // Star rating functionality
+    const starRatingInput = document.getElementById('star-rating');
+    const ratingValueInput = document.getElementById('rating-value');
+    let selectedRating = 0;
+
+    if (starRatingInput) {
+        const stars = starRatingInput.querySelectorAll('i');
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseenter', () => {
+                highlightStars(index + 1);
+            });
+            
+            star.addEventListener('mouseleave', () => {
+                highlightStars(selectedRating);
+            });
+            
+            star.addEventListener('click', () => {
+                selectedRating = index + 1;
+                ratingValueInput.value = selectedRating;
+                highlightStars(selectedRating);
+            });
+        });
+    }
+
+    function highlightStars(rating) {
+        const stars = starRatingInput.querySelectorAll('i');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.className = 'fas fa-star active';
+            } else {
+                star.className = 'far fa-star';
+            }
+        });
+    }
+
+    // Review form submission
+    const reviewForm = document.getElementById('review-form');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const newReview = {
+                name: formData.get('name'),
+                service: formData.get('service'),
+                rating: parseInt(formData.get('rating')),
+                text: formData.get('review'),
+                date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            };
+
+            // Validate required fields
+            if (!newReview.name || !newReview.service || !newReview.rating || !newReview.text) {
+                showNotification('Please fill in all required fields.', 'error');
+                return;
+            }
+
+            // Save the review
+            saveReview(newReview);
+            
+            // Show success message
+            showNotification('Thank you for your review! It has been added to our website.', 'success');
+            
+            // Reset form
+            this.reset();
+            selectedRating = 0;
+            highlightStars(0);
+            ratingValueInput.value = '';
+            
+            // Refresh reviews display
+            displayReviews();
+            
+            // Scroll to reviews to show the new review
+            setTimeout(() => {
+                document.getElementById('reviews-grid').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 500);
+        });
+    }
+
+    // Initialize reviews display
+    displayReviews();
+});
